@@ -78,6 +78,12 @@
         android:enableOnBackInvokedCallback="@bool/enableOnBackInvokedCallback"
         tools:ignore="UnusedAttribute">
 
+        <activity
+            android:name=".VpnRequiredActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@style/NormalTheme" />
+
         <profileable
             android:shell="true"
             tools:targetApi="29" />
