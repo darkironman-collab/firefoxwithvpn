@@ -1,0 +1,55 @@
+name: Build VPN Firefox APK
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "mobile/android/fenix/**"
+      - "mobile/android/android-components/**"
+      - ".github/workflows/build-vpn-firefox.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vpn-firefox-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-debug-apk:
+    name: Build ARM Android debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx6g -Dorg.gradle.daemon=false"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Build Fenix debug APK
+        working-directory: mobile/android/fenix
+        run: ./gradlew app:assembleDebug --stacktrace --no-daemon
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VPNOnlyFirefox-debug-apk
+          path: mobile/android/fenix/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
