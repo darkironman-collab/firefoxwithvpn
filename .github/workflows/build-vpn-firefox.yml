@@ -57,10 +57,20 @@ jobs:
       - name: Build Fenix debug APK
         run: ./mach gradle fenix:assembleDebug
 
+      - name: Stage Fenix APKs
+        shell: bash
+        run: |
+          mkdir -p apk-artifacts
+          while IFS= read -r -d '' apk; do
+            cp "$apk" "apk-artifacts/$(basename "$apk")"
+          done < <(find . -type f -name '*.apk' -path '*fenix*' -print0)
+          test -n "$(find apk-artifacts -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          find apk-artifacts -maxdepth 1 -type f -name '*.apk' -print
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: VPNOnlyFirefox-full-firefox-debug-apk
-          path: objdir-frontend/gradle/build/mobile/android/fenix/app/outputs/apk/debug/*.apk
+          path: apk-artifacts/*.apk
           if-no-files-found: error
           retention-days: 14
