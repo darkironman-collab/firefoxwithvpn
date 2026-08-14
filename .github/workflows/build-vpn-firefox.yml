@@ -24,6 +24,7 @@ jobs:
     timeout-minutes: 120
     env:
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx6g -Dorg.gradle.daemon=false"
+      MOZCONFIG: mobile/android/config/mozconfigs/android-aarch64/fenix-debug
     steps:
       - name: Check out source
         uses: actions/checkout@v4
