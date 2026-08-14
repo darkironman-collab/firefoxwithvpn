@@ -174,9 +174,39 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
 
     protected val applicationScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     protected val ioDispatcher = Dispatchers.IO
+    @Volatile
+    private var fenixProcessInitialized = false
+
     override fun onCreate() {
         super.onCreate()
+
+        VpnNetworkGate.start(this) {
+            if (fenixProcessInitialized && !VpnNetworkGate.isValidatedVpn(this)) {
+                // Terminating the process closes Gecko, active sockets, downloads, and background
+                // workers together. Android's system VPN kill switch covers the callback interval.
+                android.os.Process.killProcess(android.os.Process.myPid())
+            }
+        }
+
+        initializeFenixAfterVpn()
+    }
+
+    /**
+     * Initializes Firefox only while Android reports a validated VPN as the app's default network.
+     * This is also called by [VpnRequiredActivity] after the user connects a VPN.
+     */
+    @Synchronized
+    fun initializeFenixAfterVpn(): Boolean {
+        if (fenixProcessInitialized) {
+            return true
+        }
+        if (!VpnNetworkGate.bindToValidatedVpn(this)) {
+            return false
+        }
+
         initializeFenixProcess()
+        fenixProcessInitialized = true
+        return true
     }
 
     override fun attachBaseContext(base: Context) {

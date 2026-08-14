@@ -435,6 +435,14 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
 
     @Suppress("CognitiveComplexMethod", "CyclomaticComplexMethod")
     final override fun onCreate(savedInstanceState: Bundle?) {
+        if (!(application as FenixApplication).initializeFenixAfterVpn()) {
+            // Do not touch Components or Gecko before the VPN gate succeeds.
+            super.onCreate(savedInstanceState)
+            startActivity(Intent(this, VpnRequiredActivity::class.java))
+            finish()
+            return
+        }
+
         // DO NOT MOVE ANYTHING ABOVE THIS getProfilerTime CALL.
         val startTimeProfiler = components.core.engine.profiler?.getProfilerTime()
 

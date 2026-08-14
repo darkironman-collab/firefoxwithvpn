@@ -1,0 +1,76 @@
+name: Build VPN Firefox APK
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "mobile/android/fenix/**"
+      - "mobile/android/android-components/**"
+      - ".github/workflows/build-vpn-firefox.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vpn-firefox-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-debug-apk:
+    name: Build ARM Android debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx6g -Dorg.gradle.daemon=false"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Bootstrap full Firefox for Android toolchain
+        run: >-
+          ./mach --no-interactive bootstrap
+          --application-choice="GeckoView/Firefox for Android"
+
+      - name: Configure ARM64 Fenix
+        run: |
+          printf '\nac_add_options --target=aarch64\nac_add_options --enable-android-subproject=fenix\n' >> mozconfig
+          ./mach configure
+
+      - name: Build GeckoView from source
+        run: ./mach build
+
+      - name: Build Fenix debug APK
+        run: ./mach gradle fenix:assembleDebug
+
+      - name: Stage Fenix APKs
+        shell: bash
+        run: |
+          mkdir -p apk-artifacts
+          while IFS= read -r -d '' apk; do
+            cp "$apk" "apk-artifacts/$(basename "$apk")"
+          done < <(find . -type f -name '*.apk' -path '*fenix*' -print0)
+          test -n "$(find apk-artifacts -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          find apk-artifacts -maxdepth 1 -type f -name '*.apk' -print
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VPNOnlyFirefox-full-firefox-debug-apk
+          path: apk-artifacts/*.apk
+          if-no-files-found: error
+          retention-days: 14
