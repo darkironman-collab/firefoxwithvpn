@@ -41,6 +41,9 @@ jobs:
         with:
           cache-read-only: false
 
+      - name: Configure Mozilla source
+        run: ./mach configure
+
       - name: Build Fenix debug APK
         working-directory: mobile/android/fenix
         run: ./gradlew app:assembleDebug --stacktrace --no-daemon
