@@ -31,7 +31,7 @@ jobs:
           fetch-depth: 1
 
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
@@ -51,15 +51,16 @@ jobs:
           printf '\nac_add_options --target=aarch64\nac_add_options --enable-android-subproject=fenix\n' >> mozconfig
           ./mach configure
 
+      - name: Build GeckoView artifact
+        run: ./mach build
+
       - name: Build Fenix debug APK
-        working-directory: mobile/android/fenix
-        run: ./gradlew app:assembleDebug --stacktrace --no-daemon
+        run: ./mach gradle fenix:assembleDebug
 
       - name: Upload APK
-        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: VPNOnlyFirefox-debug-apk
-          path: mobile/android/fenix/app/build/outputs/apk/debug/*.apk
+          name: VPNOnlyFirefox-full-firefox-debug-apk
+          path: objdir-frontend/gradle/build/mobile/android/fenix/app/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
